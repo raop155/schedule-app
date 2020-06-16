@@ -1,0 +1,36 @@
+// Design colors
+$base_color: #222;
+$primary_color: #343333;
+$secondary_color: #c3996c;
+$tertiary_color: #fff;
+
+// Actions colors
+$success_color: #28a745;
+$warning_color: #d39e00;
+$error_color: #dc3545;
+
+// Texts colors
+$text_color: #ccc;
+$text_secondary_color: #222;
+
+// Button text colors
+$button_text_color: white;
+
+// Button background colors
+$button_bg_default_color: $secondary_color;
+$button_bg_accept_color: $success_color;
+$button_bg_warning_color: $warning_color;
+$button_bg_cancel_color: $error_color;
+
+// Input colors
+$input_color: #333;
+$input_secondary_color: #000;
+
+// Input background colors
+$input_bg_default_color: white;
+
+// Override
+$transparent: transparent;
+
+// Disable color
+$disable_color: gray;

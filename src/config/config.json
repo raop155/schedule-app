@@ -1,0 +1,6 @@
+{
+  "server": {
+    "domain": "http://localhost",
+    "folder": "/pxgp_schedule"
+  }
+}
