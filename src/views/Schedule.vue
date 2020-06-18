@@ -60,7 +60,7 @@ export default {
   data() {
     return {
       loader: {
-        color: "#c3996c",
+        color: "#dc3545",
         backgroundColor: "black",
         isLoading: false,
         fullPage: true
