@@ -2,7 +2,7 @@ import Vue from 'vue';
 import Toasted from 'vue-toasted';
 
 Vue.use(Toasted, {
-  position: 'bottom-center' as const, // ['top-right', 'top-center', 'top-left', 'bottom-right', 'bottom-center', 'bottom-left']
+  position: 'bottom-center', // ['top-right', 'top-center', 'top-left', 'bottom-right', 'bottom-center', 'bottom-left']
   duration: 2000,
   // type: 'default', // ['default', 'success', 'info', 'error']
   fullWidth: true,
@@ -26,7 +26,7 @@ Vue.toasted.register(
   },
   {
     type: 'default', // ['default', 'success', 'info', 'error']
-  }
+  },
 );
 
 Vue.toasted.register(
@@ -42,7 +42,7 @@ Vue.toasted.register(
   },
   {
     type: 'success', // ['default', 'success', 'info', 'error']
-  }
+  },
 );
 
 Vue.toasted.register(
@@ -58,7 +58,7 @@ Vue.toasted.register(
   },
   {
     type: 'error', // ['default', 'success', 'info', 'error']
-  }
+  },
 );
 
 Vue.toasted.register(
@@ -74,7 +74,7 @@ Vue.toasted.register(
   },
   {
     type: 'info', // ['default', 'success', 'info', 'error']
-  }
+  },
 );
 
 // Test

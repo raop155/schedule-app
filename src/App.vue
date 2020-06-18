@@ -1,13 +1,7 @@
 <template>
   <div id="app">
-    <Header :name="name" :lastname="lastname" />
-    <router-view
-      :setData="setData"
-      :userId="userId"
-      :documentId="documentId"
-      :userName="name"
-      :userLastname="lastname"
-    />
+    <Header :name="userData.name" :lastname="userData.lastname" />
+    <router-view :setUserData="setUserData" :userData="userData" />
   </div>
 </template>
 
@@ -25,21 +19,18 @@ export default Vue.extend({
   },
   data() {
     return {
-      userId: "",
-      documentId: "",
-      name: "",
-      lastname: ""
+      userData: {
+        userId: "",
+        documentId: "",
+        name: "",
+        lastname: ""
+      }
     };
   },
   methods: {
-    setData(key, value) {
-      this[key] = value;
-    },
     setUserData(key, value) {
       this.userData[key] = value;
-    },
-    setScheduleData(key, value) {
-      this.scheduleData[key] = value;
+      // this[key] = value;
     }
   }
 });
@@ -142,5 +133,15 @@ body {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: darken($secondary_color, 10%);
+}
+
+// Form messages
+.form__error-message {
+  color: $error_color;
+  font-size: $xs_size;
+}
+
+.form__input--error {
+  border: 1.5px solid $error_color !important;
 }
 </style>

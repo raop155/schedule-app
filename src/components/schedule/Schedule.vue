@@ -1,42 +1,88 @@
 <template>
   <div id="schedule">
+    <loading
+      :active.sync="loader.isLoading"
+      :is-full-page="loader.fullPage"
+      :color="loader.color"
+      :background-color="loader.backgroundColor"
+    ></loading>
     <div id="schedule__container">
       <div id="schedule__title">
-        <h1>Elige las opciones para su agendamiento</h1>
+        <h1>{{ scheduleData.scheduleId ? 'Actualice' : 'Elige' }} las opciones de su agendamiento</h1>
       </div>
       <div id="schedule__form">
         <form @submit.prevent="onAccept">
           <label for="form__branchId">Sucursal</label>
-          <select name="branch" id="form__branchId" v-model="branchId">
+          <select
+            name="branch"
+            id="form__branchId"
+            v-model="branchId"
+            ref="branchSelect"
+            :class="errors.branchId ? 'form__input--error' : ''"
+          >
             <option value disabled>Elige una sucursal</option>
+            <option value="TEST">Test</option>
             <option value="LAB">Laboratorio</option>
           </select>
-          <div></div>
+          <div class="form__error-message">
+            <div v-show="errors.branchId">{{ errors.branchId }}</div>
+          </div>
           <label for="form__moduleGroup">Motivo</label>
-          <select name="moduleGroup" v-model="moduleGroup" id="form__moduleGroup">
+          <select
+            name="moduleGroup"
+            v-model="moduleGroup"
+            id="form__moduleGroup"
+            :class="errors.moduleGroup ? 'form__input--error' : ''"
+          >
             <option value disabled>Elige un motivo</option>
             <option value="EJECUTIVO">EJECUTIVO</option>
             <option value="CAJA">CAJA</option>
           </select>
-          <div></div>
+          <div class="form__error-message">
+            <div v-show="errors.moduleGroup">{{ errors.moduleGroup }}</div>
+          </div>
           <label for="form__date">Fecha</label>
-          <v-date-picker
-            :mode="datePicker.mode"
-            v-model="selectedDate"
-            :popover="{ visibility: 'click' }"
-            id="form__date"
-          >
-            <input type="text" v-model="formatDate" readonly />
-          </v-date-picker>
-          <div></div>
+          <div>
+            <v-date-picker
+              :mode="datePicker.mode"
+              v-model="selectedDate"
+              :popover="{ visibility: 'click' }"
+              :disabled-dates="{ weekdays: [1, 7] }"
+              :min-date="new Date()"
+              id="form__date"
+            >
+              <input
+                type="text"
+                v-model="formatDate"
+                :class="errors.date ? 'form__input--error' : ''"
+                readonly
+              />
+            </v-date-picker>
+          </div>
+
+          <div class="form__error-message">
+            <div v-show="errors.date">{{ errors.date }}</div>
+          </div>
           <label for="form__time">Hora</label>
-          <select name="moduleGroup" v-model="selectedTime" id="form__time">
+          <select
+            name="moduleGroup"
+            v-model="selectedTime"
+            id="form__time"
+            ref="hourSelect"
+            :class="errors.time ? 'form__input--error' : ''"
+          >
             <option value disabled>Elige una hora</option>
-            <option v-for="hour in availableHours" :key="hour.value">{{hour.description}}</option>
+            <option
+              v-for="hour in availableHours"
+              :value="hour.value"
+              :key="hour.value"
+            >{{ hour.description }}</option>
           </select>
 
-          <div></div>
-          <button type="submit">Aceptar</button>
+          <div class="form__error-message">
+            <div v-show="errors.time">{{ errors.time }}</div>
+          </div>
+          <button type="submit">{{ scheduleData.scheduleId ? 'Actualizar' : 'Aceptar' }}</button>
         </form>
       </div>
     </div>
@@ -45,26 +91,50 @@
 
 <script>
 import moment from "moment";
-import config from "@/config/config.json";
+import config from "@/config/config.js";
 import axios from "axios";
+
+// Import component
+import Loading from "vue-loading-overlay";
+// Import stylesheet
+import "vue-loading-overlay/dist/vue-loading.css";
 
 export default {
   name: "schedule",
+  components: {
+    Loading
+  },
   props: {
-    userData: Object,
+    setScheduleData: Function,
     changeTab: Function,
-    scheduleData: null
+    userData: Object,
+    scheduleData: Object
   },
   data() {
     return {
+      loader: {
+        color: "#c3996c",
+        backgroundColor: "black",
+        isLoading: false,
+        fullPage: true
+      },
       addScheduleURL: "",
+      updateScheduleURL: "",
       branchId: "",
+      branchName: "",
+      hourDescription: "",
       moduleGroup: "",
       selectedDate: new Date(),
       selectedTime: "",
+      isSetDate: false,
+      errors: {
+        branchId: "",
+        moduleGroup: "",
+        date: "",
+        time: ""
+      },
       datePicker: {
-        mode: "single",
-        color: "red"
+        mode: "single"
       },
       timeArray: [
         {
@@ -151,30 +221,74 @@ export default {
     };
   },
   mounted() {
+    console.log("Schedule Mounted!");
     this.setURLs();
 
-    const branchId = sessionStorage.getItem("branchId");
-    console.log("branchId", branchId);
-    if (branchId) {
-      console.log("change branchId");
-      this.branchId = branchId;
+    // Prop scheduleData
+    let branchId = this.scheduleData.branchId;
+    const moduleGroup = this.scheduleData.moduleGroup;
+    const selectedDate = this.scheduleData.date;
+    const selectedTime = this.scheduleData.time;
+
+    if (branchId) this.branchId = branchId;
+    if (moduleGroup) this.moduleGroup = moduleGroup;
+    if (selectedDate) {
+      if (selectedDate !== this.formatDate) this.isSetDate = true;
+      this.selectedDate = moment(selectedDate).toDate();
     }
+    if (selectedTime) this.selectedTime = selectedTime;
+
+    // Props userData
+    branchId = this.userData.branchId;
+    // console.log("typof branchId", typeof branchId);
+    if (!this.branchId && branchId !== undefined) this.branchId = branchId;
+
     console.log("this.branchId", this.branchId);
   },
   methods: {
     onAccept: function() {
-      if (
-        this.branchId &&
-        this.moduleGroup &&
-        this.selectedDate &&
-        this.selectedTime
-      ) {
-        sessionStorage.setItem("schedule-information", true);
-
-        this.addSchedule();
-        //this.changeTab("finish");
-        // this.$router.push('finish');
+      if (!this.branchId) {
+        this.errors.branchId = "Campo requerido";
+        return;
+      } else {
+        this.errors.branchId = "";
       }
+
+      if (!this.moduleGroup) {
+        this.errors.moduleGroup = "Campo requerido";
+        return;
+      } else {
+        this.errors.moduleGroup = "";
+      }
+
+      if (!this.selectedDate) {
+        this.errors.date = "Campo requerido";
+        return;
+      } else {
+        this.errors.date = "";
+      }
+
+      if (!this.selectedTime) {
+        this.errors.time = "Campo requerido";
+        return;
+      } else {
+        this.errors.time = "";
+      }
+
+      // Get selects texts
+      if (this.branchId) {
+        const branchSelect = this.$refs.branchSelect;
+        const hourSelect = this.$refs.hourSelect;
+        this.branchName = branchSelect.options[branchSelect.selectedIndex].text;
+        this.hourDescription =
+          hourSelect.options[hourSelect.selectedIndex].text;
+
+        this.setScheduleData("this.branchName", this.branchName);
+        this.setScheduleData("this.hourDescription", this.hourDescription);
+      }
+
+      this.loader.isLoading = true;
+      this.scheduleData.scheduleId ? this.updateSchedule() : this.addSchedule();
     },
     setURLs() {
       this.addScheduleURL =
@@ -182,20 +296,33 @@ export default {
         config.server.folder +
         "/php/schedule/addSchedule.php";
 
+      this.updateScheduleURL =
+        config.server.domain +
+        config.server.folder +
+        "/php/schedule/updateSchedule.php";
+
       console.log("this.addScheduleURL", this.addScheduleURL);
+      console.log("this.updateScheduleURL", this.updateScheduleURL);
     },
     addSchedule() {
       const params = new FormData();
       params.append("branchId", this.branchId);
-      params.append("userId", sessionStorage.getItem("userId"));
-      params.append("documentId", sessionStorage.getItem("documentId"));
+      params.append("userId", this.userData.userId);
+      params.append("documentId", this.userData.documentId);
       params.append("userName", this.userData.name);
       params.append("userLastname", this.userData.lastname);
       params.append("moduleGroup", this.moduleGroup);
       params.append("startDate", this.formatDate + " " + this.selectedTime);
-      params.append("endDate", this.formatDate + " " + this.selectedTime);
+      params.append(
+        "endDate",
+        this.formatDate +
+          " " +
+          moment(this.formatDate + " " + this.selectedTime)
+            .add(30, "m")
+            .format("HH:mm")
+      );
 
-      console.log(params);
+      console.log(...params);
 
       axios
         .post(this.addScheduleURL, params)
@@ -206,14 +333,110 @@ export default {
           if (status.toUpperCase() === "SUCCESS") {
             console.log("this.addSchedule SUCCESS");
             console.log(data);
+
+            this.setScheduleData("branchId", this.branchId);
+            this.setScheduleData("userId", this.userData.userId);
+            this.setScheduleData("documentId", this.userData.documentId);
+            this.setScheduleData("userName", this.userData.userName);
+            this.setScheduleData("userLastname", this.userData.userLastname);
+            this.setScheduleData("moduleGroup", this.moduleGroup);
+            this.setScheduleData(
+              "startDate",
+              this.formatDate + " " + this.selectedTime
+            );
+            this.setScheduleData(
+              "endDate",
+              this.formatDate + " " + this.selectedTime
+            );
+            this.setScheduleData("branchName", this.branchName);
+            this.setScheduleData("formatDate", this.formatDate);
+            this.setScheduleData("hourDescription", this.hourDescription);
+
+            sessionStorage.setItem("schedule-information", true);
+            this.changeTab("finish");
+          } else {
+            console.warn(data);
+            this.$toasted.error("Oops an error occurred!");
           }
-          /* this.apiCallsCount++;
-          this.initTab(); */
+
+          this.loader.isLoading = false;
         })
         .catch(error => {
-          console.log(error);
-          /* this.loader.isLoading = false;
-          this.$router.push("404"); */
+          console.error(error);
+          /* t
+          his.loader.isLoading = false;
+          this.$router.push("404");
+           */
+          this.$toasted.error("Oops an error occurred!");
+          this.loader.isLoading = false;
+        });
+    },
+    updateSchedule() {
+      const params = new FormData();
+      params.append("id", this.scheduleData.scheduleId);
+      params.append("branchId", this.branchId);
+      params.append("userId", this.userData.userId);
+      params.append("documentId", this.userData.documentId);
+      params.append("userName", this.userData.name);
+      params.append("userLastname", this.userData.lastname);
+      params.append("moduleGroup", this.moduleGroup);
+      params.append("startDate", this.formatDate + " " + this.selectedTime);
+      params.append(
+        "endDate",
+        this.formatDate +
+          " " +
+          moment(this.formatDate + " " + this.selectedTime)
+            .add(30, "m")
+            .format("HH:mm")
+      );
+
+      console.log(...params);
+
+      axios
+        .post(this.updateScheduleURL, params)
+        .then(response => {
+          const status = response.data.status;
+          const data = response.data.data;
+          console.log(response);
+          if (status.toUpperCase() === "SUCCESS") {
+            console.log("this.updateSchedule SUCCESS");
+            console.log(data);
+
+            this.setScheduleData("branchId", this.branchId);
+            this.setScheduleData("userId", this.userData.userId);
+            this.setScheduleData("documentId", this.userData.documentId);
+            this.setScheduleData("userName", this.userData.userName);
+            this.setScheduleData("userLastname", this.userData.userLastname);
+            this.setScheduleData("moduleGroup", this.moduleGroup);
+            this.setScheduleData(
+              "startDate",
+              this.formatDate + " " + this.selectedTime
+            );
+            this.setScheduleData(
+              "endDate",
+              this.formatDate + " " + this.selectedTime
+            );
+            this.setScheduleData("branchName", this.branchName);
+            this.setScheduleData("formatDate", this.formatDate);
+            this.setScheduleData("hourDescription", this.hourDescription);
+
+            sessionStorage.setItem("schedule-information", true);
+            this.changeTab("finish");
+          } else {
+            console.warn(data);
+            this.$toasted.error("Oops an error occurred!");
+          }
+
+          this.loader.isLoading = false;
+        })
+        .catch(error => {
+          console.error(error);
+          /* t
+          his.loader.isLoading = false;
+          this.$router.push("404");
+           */
+          this.$toasted.error("Oops an error occurred!");
+          this.loader.isLoading = false;
         });
     }
   },
@@ -223,21 +446,49 @@ export default {
     },
     availableHours() {
       const isCurrentDay = moment(new Date()).isSame(this.selectedDate, "day");
-      // console.log("availableHours");
 
-      if (isCurrentDay) {
-        return this.timeArray.filter(hour => {
-          let hourValue = moment(hour.value, "HH:mm");
-          let hourNow = moment(new Date(), "HH:mm");
+      if (this.selectedDate !== null) {
+        if (isCurrentDay) {
+          return this.timeArray.filter(hour => {
+            let hourValue = moment(hour.value, "HH:mm");
+            let hourNow = moment(new Date(), "HH:mm");
+            // console.log("hourValue", hourValue, "hourNow", hourNow);
 
-          // console.log("hourValue", hourValue, "hourNow", hourNow);
+            if (this.scheduleData.scheduleId) {
+              const scheduleDate = this.scheduleData.date;
+              const scheduleHour = this.scheduleData.time;
 
-          if (hourValue.isAfter(hourNow)) {
-            return hour;
-          }
-        });
+              const isScheduleDay = moment(scheduleDate).isSame(
+                this.selectedDate,
+                "day"
+              );
+
+              if (isScheduleDay) {
+                if (scheduleHour && scheduleHour === hour.value) {
+                  return hour;
+                }
+              }
+            }
+
+            if (hourValue.isAfter(hourNow)) {
+              return hour;
+            }
+          });
+        } else {
+          return this.timeArray;
+        }
       } else {
-        return this.timeArray;
+        return [];
+      }
+    }
+  },
+  watch: {
+    formatDate(n, o) {
+      console.log("WAATCH >>>>", n, o);
+      if (this.isSetDate) {
+        this.isSetDate = false;
+      } else {
+        this.selectedTime = "";
       }
     }
   }

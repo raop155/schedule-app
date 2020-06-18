@@ -2,25 +2,37 @@
   <div id="finish">
     <div id="finish__container">
       <div id="finish__title">
-        <h1>¡Su agendamiento fue exitoso!</h1>
+        <h1>
+          {{
+            scheduleData.scheduleId
+              ? '¡Su agendamiento fue actualizado con éxito!'
+              : '¡Su agendamiento fue exitoso!'
+          }}
+        </h1>
       </div>
+
       <div id="finish__form">
         <div class="form__row">
           <div>Sucursal</div>
-          <div class="output">Laboratorio</div>
+          <div class="output">{{ scheduleData.branchName }}</div>
         </div>
         <div class="form__row">
           <div>Motivo</div>
-          <div class="output">CAJA</div>
+          <div class="output">{{ scheduleData.moduleGroup }}</div>
         </div>
         <div class="form__row">
           <div>Fecha</div>
-          <div class="output">2020-12-01</div>
+          <div class="output">{{ scheduleData.formatDate }}</div>
         </div>
         <div class="form__row">
           <div>Hora</div>
-          <div class="output">10:30</div>
+          <div class="output">{{ scheduleData.hourDescription }}</div>
         </div>
+      </div>
+
+      <div id="finish__legal">
+        Por favor valide su turno al momento de llegar a la sucursal en el
+        equipo de auto atención (D-one)
       </div>
     </div>
   </div>
@@ -28,13 +40,14 @@
 
 <script>
 export default {
-  name: "finish",
+  name: 'finish',
   props: {
-    test: String
+    userData: Object,
+    scheduleData: Object,
   },
   data() {
     return {};
-  }
+  },
 };
 </script>
 
@@ -102,5 +115,13 @@ export default {
     flex: 1;
     // text-align: center;
   }
+}
+
+#finish__legal {
+  margin: 0 auto;
+  width: 90%;
+  text-align: center;
+  padding-top: 25px;
+  font-size: $xs_size;
 }
 </style>

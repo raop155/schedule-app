@@ -8,13 +8,26 @@
     ></loading>
 
     <PersonalInformation
-      v-show="tab === 'personalInformation'"
+      v-if="tab === 'personalInformation'"
       :changeTab="changeTab"
-      :setData="setData"
+      :setUserData="setUserData"
       :userData="userData"
     />
-    <Schedule v-show="tab === 'schedule'" :changeTab="changeTab" :userData="userData" />
-    <Finish v-show="tab === 'finish'" :changeTab="changeTab" />
+
+    <Schedule
+      v-if="tab === 'schedule'"
+      :changeTab="changeTab"
+      :setScheduleData="setScheduleData"
+      :userData="userData"
+      :scheduleData="scheduleData"
+    />
+
+    <Finish
+      v-if="tab === 'finish'"
+      :changeTab="changeTab"
+      :userData="userData"
+      :scheduleData="scheduleData"
+    />
   </div>
 </template>
 
@@ -23,8 +36,9 @@ import PersonalInformation from "@/components/schedule/PersonalInformation.vue";
 import Schedule from "@/components/schedule/Schedule.vue";
 import Finish from "@/components/schedule/Finish.vue";
 
-import config from "@/config/config.json";
+import config from "@/config/config.js";
 import axios from "axios";
+import moment from "moment";
 
 // Import component
 import Loading from "vue-loading-overlay";
@@ -40,11 +54,8 @@ export default {
     Finish
   },
   props: {
-    setData: Function,
-    userId: String,
-    documentId: String,
-    userName: String,
-    userLastname: String
+    setUserData: Function,
+    userData: Object
   },
   data() {
     return {
@@ -57,23 +68,12 @@ export default {
       tab: "",
       getUserURL: "",
       getScheduleURL: "",
-      userData: {
-        userId: "",
-        documentId: "",
-        name: "",
-        lastname: ""
-      },
-      scheduleData: null,
+      scheduleData: {},
       apiCalls: 2,
       apiCallsCount: 0
     };
   },
   mounted() {
-    this.userData.userId = this.userId;
-    this.userData.documentId = this.documentId;
-    this.userData.name = this.userName;
-    this.userData.lastname = this.userLastname;
-
     this.setURLs();
     this.checkSessionStorage();
     this.getData();
@@ -81,6 +81,9 @@ export default {
   methods: {
     changeTab(tab) {
       this.tab = tab;
+    },
+    setScheduleData(key, value) {
+      this.scheduleData[key] = value;
     },
     setURLs() {
       this.getUserURL =
@@ -99,8 +102,8 @@ export default {
         const documentId = sessionStorage.getItem("documentId");
 
         if (userId && documentId) {
-          this.userData.userId = userId;
-          this.userData.documentId = documentId;
+          this.setUserData("userId", userId);
+          this.setUserData("documentId", documentId);
         }
       }
     },
@@ -118,7 +121,23 @@ export default {
           const data = response.data.data;
           console.log(response);
           if (status.toUpperCase() === "SUCCESS") {
-            this.userData = data;
+            let name = "";
+            let lastname = "";
+            let phone = "";
+            let email = "";
+
+            if (data) {
+              name = data.name;
+              lastname = data.lastname;
+              phone = data.phone;
+              email = data.email;
+            }
+
+            this.setUserData("name", name);
+            this.setUserData("lastname", lastname);
+            this.setUserData("phone", phone);
+            this.setUserData("email", email);
+
             console.log("this.userData SUCCESS");
             console.log(this.userData);
           }
@@ -132,11 +151,12 @@ export default {
         });
 
       params = new FormData();
-      params.append("branchId", this.branchId);
-      params.append("userId", this.userId);
-      params.append("documentId", this.documentId);
-      params.append("startDate", "");
-      params.append("endDate", "");
+      // params.append("branchId", this.branchId);
+      params.append("userId", this.userData.userId);
+      params.append("documentId", this.userData.documentId);
+      params.append("starttime", moment(new Date()).format("YYYY-MM-DD"));
+      // params.append("endDate", moment(new Date()).format("YYYY-MM-DD"));
+      params.append("status", "wait");
 
       axios
         .post(this.getScheduleURL, params)
@@ -148,6 +168,24 @@ export default {
             this.getSchedule = data;
             console.log("this.getSchedule SUCCESS");
             console.log(this.getSchedule);
+
+            if (data.length > 0) {
+              this.setScheduleData("scheduleId", data[0].id);
+              this.setScheduleData("branchId", data[0].branchId);
+              this.setScheduleData("userId", data[0].userId);
+              this.setScheduleData("documentId", data[0].documentId);
+              this.setScheduleData("userName", data[0].userName);
+              this.setScheduleData("userLastname", data[0].userLastname);
+              this.setScheduleData("moduleGroup", data[0].moduleGroup);
+              this.setScheduleData(
+                "date",
+                moment(data[0].startDate).format("YYYY-MM-DD")
+              );
+              this.setScheduleData(
+                "time",
+                moment(data[0].startDate).format("HH:mm")
+              );
+            }
           }
           this.apiCallsCount++;
           this.initTab();

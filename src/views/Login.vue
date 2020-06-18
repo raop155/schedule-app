@@ -7,17 +7,33 @@
       <div id="login__form">
         <form @submit.prevent="onLogin">
           <label for="form__documentId">Tipo de documento</label>
-          <select name="document" id="form__documentId" v-model="documentId">
-            <option value>Elige un tipo de documento</option>
+          <select
+            name="document"
+            id="form__documentId"
+            v-model="documentId"
+            :class="errors.documentId ? 'form__input--error' : ''"
+          >
+            <option value disabled>Elige un tipo de documento</option>
             <option value="RUT">RUT</option>
             <!-- <option value="CE">Carné de extranjería</option> -->
             <!--  <option value="OTHER">Otros</option> -->
             <!-- <option value="DNI">DNI</option> -->
           </select>
-          <div></div>
+          <div class="form__error-message">
+            <div v-show="errors.documentId">{{errors.documentId}}</div>
+          </div>
           <label for="form__userId">Número de documento</label>
-          <input type="text" placeholder v-model.trim="userId" id="form__userId" />
-          <div></div>
+          <input
+            type="text"
+            placeholder
+            v-model.trim="userId"
+            @input="onlyRUTLetters"
+            id="form__userId"
+            :class="errors.userId ? 'form__input--error' : ''"
+          />
+          <div class="form__error-message">
+            <div v-show="errors.userId">{{errors.userId}}</div>
+          </div>
           <button type="submit">Aceptar</button>
         </form>
       </div>
@@ -36,32 +52,70 @@
 export default {
   name: "login",
   props: {
-    branchId: String,
-    setData: Function
+    branchId: {
+      type: String,
+      default: ""
+    },
+    setUserData: Function
   },
   data() {
     return {
       documentId: "RUT",
-      userId: ""
+      userId: "",
+      errors: {
+        documentId: "",
+        userId: ""
+      },
+      validators: {
+        rut: /^[0-9]+[K]?$/i
+      }
     };
   },
   mounted() {
     sessionStorage.clear();
     console.log("branchId", this.branchId);
+
+    this.setUserData("name", "");
+    this.setUserData("lastname", "");
   },
   methods: {
+    onlyRUTLetters() {
+      if (this.userId)
+        this.userId = this.userId.toUpperCase().replace(/^[a-jl-z]+[k]?/gi, "");
+    },
     onLogin: function() {
-      if (this.documentId && this.userId) {
-        sessionStorage.setItem("logged-in", true);
-        if (this.branchId) sessionStorage.setItem("branchId", this.branchId);
-        sessionStorage.setItem("documentId", this.documentId);
-        sessionStorage.setItem("userId", this.userId);
-
-        this.setData("documentId", this.documentId);
-        this.setData("userId", this.userId);
-
-        this.$router.push({ path: "/schedule" });
+      if (!this.documentId) {
+        this.errors.documentId = "Campo requerido";
+        return;
+      } else {
+        this.errors.documentId = "";
       }
+
+      if (!this.userId) {
+        this.errors.userId = "Campo requerido";
+        return;
+      } else {
+        console.log(this.validators.rut.test(this.userId));
+        if (!this.validators.rut.test(this.userId)) {
+          this.errors.userId = "RUT no válido";
+          return;
+        } else {
+          this.errors.userId = "";
+        }
+      }
+
+      // Set data to storages and variables
+      sessionStorage.setItem("logged-in", true);
+      sessionStorage.setItem("branchId", this.branchId);
+      sessionStorage.setItem("documentId", this.documentId);
+      sessionStorage.setItem("userId", this.userId);
+
+      this.setUserData("branchId", this.branchId);
+      this.setUserData("documentId", this.documentId);
+      this.setUserData("userId", this.userId);
+
+      // Change scene
+      this.$router.push({ path: "/schedule" });
     }
   }
 };

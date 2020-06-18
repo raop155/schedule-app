@@ -3,6 +3,7 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 
+import './libs/toast';
 import './libs/v-calendar';
 
 Vue.config.productionTip = false;
