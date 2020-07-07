@@ -18,11 +18,11 @@
             id="form__branchId"
             v-model="branchId"
             ref="branchSelect"
+            @change="moduleGroup = ''"
             :class="errors.branchId ? 'form__input--error' : ''"
           >
             <option value disabled>Elige una sucursal</option>
-            <option value="TEST">Test</option>
-            <option value="LAB">Laboratorio</option>
+            <option v-for="branch in branches" :value="branch.id" :key="branch.id">{{branch.name}}</option>
           </select>
           <div class="form__error-message">
             <div v-show="errors.branchId">{{ errors.branchId }}</div>
@@ -35,8 +35,7 @@
             :class="errors.moduleGroup ? 'form__input--error' : ''"
           >
             <option value disabled>Elige un motivo</option>
-            <option value="EJECUTIVO">EJECUTIVO</option>
-            <option value="CAJA">CAJA</option>
+            <option v-for="module in branchModules" :key="module">{{module}}</option>
           </select>
           <div class="form__error-message">
             <div v-show="errors.moduleGroup">{{ errors.moduleGroup }}</div>
@@ -49,6 +48,8 @@
               :popover="{ visibility: 'click' }"
               :disabled-dates="{ weekdays: [1, 7] }"
               :min-date="new Date()"
+              @input="resetHour()"
+              :is-required="true"
               id="form__date"
             >
               <input
@@ -135,6 +136,36 @@ export default {
       },
       datePicker: {
         mode: "single"
+      },
+      branches: {
+        TEST: {
+          id: "TEST",
+          name: "Test",
+          modules: [
+            "EJECUTIVO",
+            "EJECUTIVO EMPRESAS",
+            "CAJA / ATENCION AL CLIENTE"
+          ]
+        },
+        LAB: {
+          id: "LAB",
+          name: "Laboratorio",
+          modules: [
+            "EJECUTIVO",
+            "EJECUTIVO EMPRESAS",
+            "CAJA / ATENCION AL CLIENTE"
+          ]
+        },
+        LABCL: {
+          id: "LABCL",
+          name: "Laboratorio Chile",
+          modules: ["EJECUTIVO", "CAJA / ATENCION AL CLIENTE"]
+        },
+        LAB2: {
+          id: "LAB2",
+          name: "Laboratorio 2",
+          modules: ["CAJA / ATENCION AL CLIENTE"]
+        }
       },
       timeArray: [
         {
@@ -233,7 +264,8 @@ export default {
     if (branchId) this.branchId = branchId;
     if (moduleGroup) this.moduleGroup = moduleGroup;
     if (selectedDate) {
-      if (selectedDate !== this.formatDate) this.isSetDate = true;
+      // if (selectedDate !== this.formatDate) this.isSetDate = true;
+      this.isSetDate = true;
       this.selectedDate = moment(selectedDate).toDate();
     }
     if (selectedTime) this.selectedTime = selectedTime;
@@ -303,6 +335,14 @@ export default {
 
       console.log("this.addScheduleURL", this.addScheduleURL);
       console.log("this.updateScheduleURL", this.updateScheduleURL);
+    },
+    resetHour() {
+      console.log("resetHour!", this.isSetDate);
+      if (this.isSetDate) {
+        this.isSetDate = false;
+      } else {
+        this.selectedTime = "";
+      }
     },
     addSchedule() {
       const params = new FormData();
@@ -480,15 +520,12 @@ export default {
       } else {
         return [];
       }
-    }
-  },
-  watch: {
-    formatDate(n, o) {
-      console.log("WAATCH >>>>", n, o);
-      if (this.isSetDate) {
-        this.isSetDate = false;
+    },
+    branchModules() {
+      if (this.branches[this.branchId]) {
+        return this.branches[this.branchId].modules;
       } else {
-        this.selectedTime = "";
+        return [];
       }
     }
   }

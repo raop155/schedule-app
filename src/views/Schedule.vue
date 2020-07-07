@@ -154,7 +154,7 @@ export default {
       // params.append("branchId", this.branchId);
       params.append("userId", this.userData.userId);
       params.append("documentId", this.userData.documentId);
-      params.append("starttime", moment(new Date()).format("YYYY-MM-DD"));
+      params.append("startDate", moment(new Date()).format("YYYY-MM-DD HH:mm"));
       // params.append("endDate", moment(new Date()).format("YYYY-MM-DD"));
       params.append("status", "wait");
 
